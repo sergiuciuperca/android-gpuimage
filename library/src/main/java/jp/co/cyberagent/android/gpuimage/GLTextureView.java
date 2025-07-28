@@ -1266,7 +1266,8 @@ public class GLTextureView extends TextureView
                             }
 
                             // Have we lost the TextureView surface?
-                            if ((!hasSurface) && (!waitingForSurface)) {
+                            // Only process surface state changes if we're not shutting down
+                            if ((!hasSurface) && (!waitingForSurface) && (!shouldExit)) {
                                 if (LOG_SURFACE) {
                                     Log.i("GLThread", "noticed textureView surface lost tid=" + getId());
                                 }
@@ -1494,7 +1495,7 @@ public class GLTextureView extends TextureView
                 }
                 hasSurface = true;
                 glThreadManager.notifyAll();
-                while ((waitingForSurface) && (!exited)) {
+                while ((waitingForSurface) && (!shouldExit)) {
                     try {
                         glThreadManager.wait();
                     } catch (InterruptedException e) {
@@ -1511,7 +1512,7 @@ public class GLTextureView extends TextureView
                 }
                 hasSurface = false;
                 glThreadManager.notifyAll();
-                while ((!waitingForSurface) && (!exited)) {
+                while ((!waitingForSurface) && (!shouldExit)) {
                     try {
                         glThreadManager.wait();
                     } catch (InterruptedException e) {
@@ -1528,7 +1529,7 @@ public class GLTextureView extends TextureView
                 }
                 requestPaused = true;
                 glThreadManager.notifyAll();
-                while ((!exited) && (!paused)) {
+                while ((!paused) && (!shouldExit)) {
                     if (LOG_PAUSE_RESUME) {
                         Log.i("Main thread", "onPause waiting for paused.");
                     }
@@ -1550,7 +1551,7 @@ public class GLTextureView extends TextureView
                 requestRender = true;
                 renderComplete = false;
                 glThreadManager.notifyAll();
-                while ((!exited) && paused && (!renderComplete)) {
+                while (paused && (!renderComplete) && (!shouldExit)) {
                     if (LOG_PAUSE_RESUME) {
                         Log.i("Main thread", "onResume waiting for !paused.");
                     }
@@ -1573,7 +1574,7 @@ public class GLTextureView extends TextureView
                 glThreadManager.notifyAll();
 
                 // Wait for thread to react to resize and render a frame
-                while (!exited && !paused && !renderComplete && ableToDraw()) {
+                while (!paused && !renderComplete && !shouldExit && ableToDraw()) {
                     if (LOG_SURFACE) {
                         Log.i("Main thread", "onWindowResize waiting for render complete from tid=" + getId());
                     }
