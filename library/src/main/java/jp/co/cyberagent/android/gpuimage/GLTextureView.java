@@ -479,6 +479,7 @@ public class GLTextureView extends TextureView
             Log.d(TAG, "onDetachedFromWindow");
         }
         if (glThread != null) {
+            onPause();
             glThread.requestExitAndWait();
         }
         detached = true;
@@ -1529,12 +1530,20 @@ public class GLTextureView extends TextureView
                 }
                 requestPaused = true;
                 glThreadManager.notifyAll();
+                long timeout = 2000;
+                long endTime = System.currentTimeMillis() + timeout;
                 while ((!paused) && (!shouldExit)) {
                     if (LOG_PAUSE_RESUME) {
                         Log.i("Main thread", "onPause waiting for paused.");
                     }
+                    long remaining = endTime - System.currentTimeMillis();
+                    if (remaining <= 0) {
+                        Log.w("GLThread", "GLThread did not exit in " + timeout + "ms!");
+                        break;
+                    }
+
                     try {
-                        glThreadManager.wait();
+                        glThreadManager.wait(remaining);
                     } catch (InterruptedException ex) {
                         Thread.currentThread().interrupt();
                     }
